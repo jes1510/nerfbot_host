@@ -44,20 +44,20 @@ def main():
     controller.write('ip ' + ip + '\n')
     time.sleep(0.1)
     controller.write('wii Scanning...\n')
-    print 'Press button 1 + 2 on your Wii Remote...'
+    print 'Ready to connect...'
     time.sleep(.1)
     wm = None
-    i=2
+
     while not wm:
       try:
         wm=cwiid.Wiimote()
       except RuntimeError:
-        if (i>10):
-          quit()
-          break
-        print "Error opening wiimote connection"
-        print "attempt " + str(i)
-        i +=1
+        #if (i>10):
+         # quit()
+          #break
+        print "Error opening wiimote connection, retrying"
+        #print "attempt " + str(i)
+        #i +=1
     controller.write('wii Connected\n')
     print 'Wii Remote connected...'
     time.sleep(1)
@@ -70,14 +70,14 @@ def main():
 
     while True:
         button = wm.state['buttons']
-        print wm.state['nunchuk']['stick']
+    #    print wm.state['nunchuk']['stick']
         stick_y = wm.state['nunchuk']['stick'][1]
         stick_x = wm.state['nunchuk']['stick'][0]
 
         x = remap(stick_x, 27, 222, -50, 50)
         y = remap(stick_y, 35, 228, -127, 127)
-        print "X, Y", x, y
-        print "Steering ->", steer(x, y)
+    #    print "X, Y", x, y
+    #    print "Steering ->", steer(x, y)
         l_pwm, r_pwm = steer(x, y)
 
         if l_pwm < 0 :
