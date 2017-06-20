@@ -46,7 +46,18 @@ def main():
     controller.write('wii Scanning...\n')
     print 'Press button 1 + 2 on your Wii Remote...'
     time.sleep(.1)
-    wm=cwiid.Wiimote()
+    wm = None
+    i=2
+    while not wm:
+      try:
+        wm=cwiid.Wiimote()
+      except RuntimeError:
+        if (i>10):
+          quit()
+          break
+        print "Error opening wiimote connection"
+        print "attempt " + str(i)
+        i +=1
     controller.write('wii Connected\n')
     print 'Wii Remote connected...'
     time.sleep(1)
@@ -138,6 +149,8 @@ def remap (x, in_min, in_max, out_min, out_max) :
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
+def quit() :
+    exit()
 
 def steer (x, y) :
     left_motor = x + y
