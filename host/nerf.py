@@ -1,12 +1,4 @@
-#-------------------------------------------------------------------------------
-# Name:        Wii Remote - connect to Bluetooth cwiid
-# Purpose:
-#
-# Author:      Brian Hensley
-#
-# Created:     21/07/2012
-# Copyright:   (c) Brian 2012
-#-------------------------------------------------------------------------------
+
 #!/usr/bin/env python
 
 import cwiid
@@ -16,11 +8,17 @@ import wii
 import math
 import qik
 import os
+import socket
 
-q = qik.Qik('/dev/ttyUSB0', 9600)
-controller = serial.Serial('/dev/ttyACM0', 9600)
+motorPort = 8000
+periphPort = 8001
+host = 'localhost'
 
+q = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+q.connect((host, motorPort))
 
+controller = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+controller.connect((host, periphPort))
 
 sentFlag = 0
 
@@ -41,30 +39,25 @@ def main():
     f = os.popen('ifconfig wlan0 | grep "inet\ addr" | cut -d: -f2 | cut -d" " -f1')
     ip=f.read()
 
-    controller.write('ip ' + ip + '\n')
+    controller.sendall('ip ' + ip + '\n')
     time.sleep(0.1)
-    controller.write('wii Scanning...\n')
+    controller.sendall('wii Scanning...\n')
     print 'Ready to connect...'
     time.sleep(.1)
     wm = None
 
     while not wm:
-      try:
-        wm=cwiid.Wiimote()
-      except RuntimeError:
-        #if (i>10):
-         # quit()
-          #break
-        print "Error opening wiimote connection, retrying"
-        #print "attempt " + str(i)
-        #i +=1
-    controller.write('wii Connected\n')
+        try:
+            wm=cwiid.Wiimote()
+        except RuntimeError:
+            print "Error opening wiimote connection, retrying"
+
+    controller.sendall('wii Connected\n')
     print 'Wii Remote connected...'
     time.sleep(1)
 
     Rumble = False
     wm.rpt_mode = cwiid.RPT_BTN | cwiid.RPT_NUNCHUK
-
 
     speed = '128'
 
@@ -76,8 +69,6 @@ def main():
 
         x = remap(stick_x, 27, 222, -50, 50)
         y = remap(stick_y, 35, 228, -127, 127)
-    #    print "X, Y", x, y
-    #    print "Steering ->", steer(x, y)
         l_pwm, r_pwm = steer(x, y)
 
         if l_pwm < 0 :
@@ -93,43 +84,35 @@ def main():
         l_pwm = abs(l_pwm)
         r_pwm = abs(r_pwm)
 
-        q.moveM1(l_dir, l_pwm)
-        q.moveM0(r_dir, r_pwm)
+        line = str(l_dir) + " " + str(l_pwm) +  " " + str(r_dir) + " " + str(r_pwm) + "\n"
+        print line
 
+        q.sendall(line)
         time.sleep(0.1)
 
         if button == (wii.BTN_PLUS | wii.BTN_MINUS):
             print 'closing Bluetooth connection. Good Bye!'
             time.sleep(1)
-            ser.close()
             exit(wm)
 
         if (button == wii.BTN_LEFT) and not(sentFlag & wii.BTN_LEFT):
             print "Left"
-        #    send ('motor1 128 1')
-        #    send ('motor2 128 0')
             sentFlag = wii.BTN_LEFT
             time.sleep(.5)
 
 
         if (button == wii.BTN_UP) and not(sentFlag & wii.BTN_UP) :
             print "forward"
-        #    send('motor1 ' + speed + ' 0')
-        #    send('motor2 ' + speed + ' 0')
             sentFlag = wii.BTN_UP
             time.sleep(.5)
 
         if (button  == wii.BTN_RIGHT) and not (sentFlag & wii.BTN_RIGHT):
             print "Right"
-        #    send ('motor1 128 0')
-        #    send ('motor2 128 1')
             sentFlag = wii.BTN_RIGHT
             time.sleep(.5)
 
         if (button == wii.BTN_DOWN) and not(sentFlag & wii.BTN_DOWN):
             print "back"
-        #    send('motor1 ' + speed + ' 1')
-        #    send('motor2 ' + speed + ' 1')
             sentFlag = wii.BTN_DOWN
             time.sleep(.5)
 '''
@@ -156,15 +139,10 @@ def steer (x, y) :
     left_motor = x + y
     right_motor = x - y
 
-# Scale factor defaults to 1
     scale_factor = 1
 
-# Calculate scale factor
     if abs(left_motor) > 100 or abs(right_motor) > 100:
-    # Find highest of the 2 values, since both could be above 100
         x = max(abs(left_motor), abs(right_motor))
-
-    # Calculate scale factor
         scale_factor = 100.0 / x
 
 
@@ -175,15 +153,6 @@ def steer (x, y) :
     r = remap(right_motor, -100, 100, -127, 127)
 
     return l, r
-
-
-def send(command) :
-    #ser.flush()
-    out = command + '\n'
-    print "Sending: '" + command + "'"
-    #ser.write(out)
-
-    print "Controller returned: " + ser.readline()
 
 
 

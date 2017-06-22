@@ -101,7 +101,7 @@ class Qik :
             self.send(self.commands.M1Forward)
         else :
             self.send(self.commands.M1Reverse)
-        self.send(speed)
+        self.send(speed)   
 
 
     def getVer(self) :
