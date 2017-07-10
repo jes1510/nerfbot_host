@@ -59,13 +59,16 @@ def clientthread(conn):
                 splitData = data.split(' ')
                 m1dir, m1pwm, m2dir, m2pwm = splitData
                 q.moveM0(int(m1dir), int(m1pwm))
+                port.send(periphSer.readline())
                 q.moveM1(int(m2dir), int(m2pwm))
+                port.send(periphSer.readline())
 
             except :
                 print "Corrupt Frame!"
 
         if port == periphPort :
             periphSer.write(data + '\n')
+            port.send(periphSer.readline())
 
     conn.close()
 
