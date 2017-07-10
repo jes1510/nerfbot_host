@@ -14,7 +14,7 @@ host = ''
 motorPort = 8000
 periphPort = 8001
 
-periphSer = serial.Serial('/dev/ttyACM1', 9600)
+periphSer = serial.Serial('/dev/ttyACM0', 9600)
 q = qik.Qik('/dev/ttyUSB1', 9600)
 
 motorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,16 +59,17 @@ def clientthread(conn):
                 splitData = data.split(' ')
                 m1dir, m1pwm, m2dir, m2pwm = splitData
                 q.moveM0(int(m1dir), int(m1pwm))
-                port.send(periphSer.readline())
+                #port.send(periphSer.readline())
                 q.moveM1(int(m2dir), int(m2pwm))
-                port.send(periphSer.readline())
+                #port.send(periphSer.readline())
 
             except :
                 print "Corrupt Frame!"
 
         if port == periphPort :
             periphSer.write(data + '\n')
-            port.send(periphSer.readline())
+            conn.send(periphSer.readline())
+            #periphSer.flush()
 
     conn.close()
 
