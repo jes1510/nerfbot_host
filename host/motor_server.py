@@ -15,10 +15,12 @@ motorPort = 8000
 periphPort = 8001
 
 periphSer = serial.Serial('/dev/ttyACM0', 9600)
-q = qik.Qik('/dev/ttyUSB1', 9600)
+q = qik.Qik('/dev/ttyUSB0', 9600)
 
 motorSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 periphSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+stopMain = False
+
 
 try:
     motorSocket.bind((host, motorPort))
@@ -39,19 +41,30 @@ outputs = []
 
 
 def clientthread(conn):
+    global stopMain
     conn.send('Ready\n')
 
-    while True:     #  Loop until empty or "quit"
+    while True :     #  Loop until empty or "quit"
         add, port = conn.getsockname()
 
         data = conn.recv(1024)
-        print "RCVD: " + data + "\tFrom:", add, port
+        print "RCVD : " + data + "\tFrom:", add, port
         if not data :
             break
 
-        if data.strip() == "quit" :
-            print "Exiting!"
+        if data.strip() == "end" :
+            print "Ending thread!"
+            conn.send("Goodbye!")
+            conn.close()
             break
+
+
+        if data.strip() == "quit" or data.strip() == "exit":
+            conn.send("Goodbye!")
+            stopMain = True
+            conn.close()
+            break
+
 
         if port == motorPort :
             try :
@@ -65,20 +78,28 @@ def clientthread(conn):
 
             except :
                 print "Corrupt Frame!"
+                conn.send("Corrupt Frame")
 
         if port == periphPort :
             periphSer.write(data + '\n')
-            conn.send(periphSer.readline())
-            #periphSer.flush()
+            returned = periphSer.readline()
+
+            if returned.strip() != "OK" :
+                print periphSer.readline()
+
+            conn.send(returned)        
 
     conn.close()
 
-while 1:
-    readable, writable, exceptional = select.select(inputs, inputs, inputs)
-    for s in readable :
-        conn, add = s.accept()
-        print s.getsockname()
-        start_new_thread(clientthread ,(conn,))
+count = 0
+
+while not stopMain:
+    readable, writable, exceptional = select.select(inputs, inputs, inputs, 3)
+    if readable :
+        for s in readable :
+            conn, add = s.accept()
+            print s.getsockname()
+            start_new_thread(clientthread ,(conn,))
 
 
 s.close()
