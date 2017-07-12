@@ -67,7 +67,7 @@ def main():
         stick_y = wm.state['nunchuk']['stick'][1]
         stick_x = wm.state['nunchuk']['stick'][0]
 
-        x = remap(stick_x, 27, 222, -50, 50)
+        x = remap(stick_x, 27, 222, 50, -50)
         y = remap(stick_y, 35, 228, -127, 127)
         l_pwm, r_pwm = steer(x, y)
 
